@@ -1,0 +1,58 @@
+version: "3.7"
+services:
+  app:
+    build:
+      args:
+        user: product
+        uid: 1000
+      context: ./
+      dockerfile: Dockerfile
+    image: products
+    container_name: products-app
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./:/var/www
+    networks:
+      - products
+
+  db:
+    image: mysql:5.7
+    container_name: products-db
+    restart: unless-stopped
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql  
+    volumes:
+      - ./docker-compose/mysql:/docker-entrypoint-initdb.d
+    networks:
+      - products
+
+  adminer:
+    image: adminer
+    ports:
+      - 8080:8080
+    networks:
+      - products
+
+  nginx:
+    image: nginx:alpine
+    container_name: products-nginx
+    restart: unless-stopped
+    ports:
+      - 8000:80
+    volumes:
+      - ./:/var/www
+      - ./docker-compose/nginx:/etc/nginx/conf.d/
+    networks:
+      - products
+
+networks:
+  products:
+    driver: bridge
